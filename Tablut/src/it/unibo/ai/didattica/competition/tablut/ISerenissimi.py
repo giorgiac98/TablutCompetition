@@ -4,9 +4,9 @@ from socket import socket, AF_INET, SOCK_STREAM
 
 import numpy as np
 
-from tablutzero.game import State
-from tablutzero.neuralnet import ResidualNN
-from tablutzero.player import Player
+from pytablut.game import State
+# from pytablut.neuralnet import ResidualNN
+from pytablut.player import Player
 
 MAP = {'EMPTY': 0, 'BLACK': -1, 'WHITE': 1, 'KING': 2, 'THRONE': 0,
        'WHITEWIN': 100, 'BLACKWIN': 100, 'DRAW': 100}
@@ -99,9 +99,9 @@ def play(comm, player):
     if state.turn == 'DRAW':
         print("it\'s a draw")
     elif state.turn == player.color:
-        print('i won!')
+        print('I won!')
     else:
-        print('i lost')
+        print('I lost')
 
 
 if __name__ == '__main__':
@@ -117,10 +117,10 @@ if __name__ == '__main__':
                         help='name of the player')
     args = parser.parse_args()
 
-    nnet = ResidualNN()
+    # nnet = ResidualNN()
     p = Player(color=args.color.upper(),
                name=args.name,
-               nnet=nnet,
+               nnet=None,
                timeout=args.timeout)
 
     c = ServerCommunication(color=args.color.upper(),
