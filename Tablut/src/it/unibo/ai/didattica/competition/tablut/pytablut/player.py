@@ -3,12 +3,12 @@ import time
 
 import numpy as np
 
-import config as cfg
-import loggers as lg
-from MCTS import MCTS, Node
-from game import MAP
-from neuralnet import ResidualNN
-from utils import Timeit
+import pytablut.config as cfg
+import pytablut.loggers as lg
+from pytablut.MCTS import MCTS, Node
+from pytablut.game import MAP
+# from neuralnet import ResidualNN
+from pytablut.utils import Timeit
 
 
 class Player:
@@ -27,7 +27,7 @@ class Player:
         self.color: int = MAP[color]
         self.timeout: int = timeout
         self.mcts: MCTS = None
-        self.brain: ResidualNN = nnet
+        # self.brain: ResidualNN = nnet
         self.simulations: int = simulations
         self.choice_strategy = choice_strategy
         self.c_puct: int = c_puct

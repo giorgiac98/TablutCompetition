@@ -8,8 +8,8 @@ from tensorflow.keras.optimizers import SGD
 from tensorflow.keras.regularizers import l2
 from tensorflow.nn import softmax_cross_entropy_with_logits
 
-import config as cfg
-import loggers as lg
+import pytablut.config as cfg
+import pytablut.loggers as lg
 
 logger = lg.logger_nnet
 

@@ -1,9 +1,9 @@
 import numpy as np
 
-import config as cfg
-import loggers as lg
-from game import State
-from utils import Timeit
+import pytablut.config as cfg
+import pytablut.loggers as lg
+from pytablut.game import State
+from pytablut.utils import Timeit
 
 
 class Node:

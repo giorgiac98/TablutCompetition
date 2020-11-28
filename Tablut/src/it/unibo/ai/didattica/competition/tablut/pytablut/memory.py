@@ -3,9 +3,9 @@ from collections import deque
 import pickle
 import numpy as np
 
-import config as cfg
-import loggers as lg
-import game  # needed by pickle
+import pytablut.config as cfg
+import pytablut.loggers as lg
+from pytablut import game # needed by pickle
 
 
 def load_memories(path='./memories/'):

@@ -1,10 +1,10 @@
-import config as cfg
-import loggers as lg
-from game import Game
-from memory import Memory, load_memories, compact_memories
-from neuralnet import ResidualNN
-from player import Player
-from utils import Timeit
+import pytablut.config as cfg
+import pytablut.loggers as lg
+from pytablut.game import Game
+from pytablut.memory import Memory, load_memories, compact_memories
+from pytablut.neuralnet import ResidualNN
+from pytablut.player import Player
+from pytablut.utils import Timeit
 
 lg.logger_train.info('=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*')
 lg.logger_train.info('=*=*=*=*=*=.      NEW LOG      =*=*=*=*=*')
