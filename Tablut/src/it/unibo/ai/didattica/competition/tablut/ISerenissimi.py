@@ -10,7 +10,7 @@ from pytablut.player import Player
 from pytablut.utils import setup_folders
 
 MAP = {'EMPTY': 0, 'BLACK': -1, 'WHITE': 1, 'KING': 2, 'THRONE': 0,
-       'WHITEWIN': 100, 'BLACKWIN': 100, 'DRAW': 100}
+       'WHITEWIN': 1, 'BLACKWIN': -1, 'DRAW': 0}
 
 
 class ServerCommunication:
@@ -99,7 +99,7 @@ def play(comm, player):
 
     if state.turn == 'DRAW':
         print("it\'s a draw")
-    elif state.turn == player.color:
+    elif MAP[state.turn] == player.color:
         print('I won!')
     else:
         print('I lost')
