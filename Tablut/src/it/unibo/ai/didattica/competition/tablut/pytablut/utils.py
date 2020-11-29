@@ -1,5 +1,5 @@
 import time
-
+import os
 
 class Map:
 
@@ -47,3 +47,11 @@ class Timeit:
             return result
 
         return timed
+
+
+def setup_folders():
+    if 'logs' not in os.listdir():
+        os.mkdir('logs')
+    if 'model' not in os.listdir():
+        os.mkdir('model')
+        os.mkdir('model/history')

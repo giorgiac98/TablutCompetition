@@ -7,6 +7,7 @@ import numpy as np
 from pytablut.game import State
 # from pytablut.neuralnet import ResidualNN
 from pytablut.player import Player
+from pytablut.utils import setup_folders
 
 MAP = {'EMPTY': 0, 'BLACK': -1, 'WHITE': 1, 'KING': 2, 'THRONE': 0,
        'WHITEWIN': 100, 'BLACKWIN': 100, 'DRAW': 100}
@@ -113,9 +114,10 @@ if __name__ == '__main__':
                         help='timeout in seconds')
     parser.add_argument('ip', type=str,
                         help='server ip address')
-    parser.add_argument('-n', '--name', type=str, default='dioboia',
+    parser.add_argument('-n', '--name', type=str, default='Serenissimo',
                         help='name of the player')
     args = parser.parse_args()
+    setup_folders()
 
     # nnet = ResidualNN()
     p = Player(color=args.color.upper(),
