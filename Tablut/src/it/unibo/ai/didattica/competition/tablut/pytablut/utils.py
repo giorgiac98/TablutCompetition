@@ -55,3 +55,4 @@ def setup_folders():
     if 'model' not in os.listdir():
         os.mkdir('model')
         os.mkdir('model/history')
+        os.mkdir('model/brain')

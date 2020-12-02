@@ -114,16 +114,21 @@ if __name__ == '__main__':
                         help='timeout in seconds')
     parser.add_argument('ip', type=str,
                         help='server ip address')
-    parser.add_argument('-n', '--name', type=str, default='Serenissimo',
+    parser.add_argument('-n', '--name', type=str, default='Doge',
                         help='name of the player')
+    parser.add_argument('-m', '--model', type=int, default='-1',
+                        help='version of the neural network to use (<0 means no network)')
     args = parser.parse_args()
     setup_folders()
-
-    # nnet = ResidualNN()
-    p = Player(color=args.color.upper(),
-               name=args.name,
-               nnet=None,
-               timeout=args.timeout)
+    if args.model < 0:
+        p = Player(color=args.color.upper(),
+                   name=args.name,
+                   timeout=args.timeout)
+    else:
+        p = Player(color=args.color.upper(),
+                   name=args.name,
+                   nnet_ver=args.model,
+                   timeout=args.timeout)
 
     c = ServerCommunication(color=args.color.upper(),
                             ip_address=args.ip)

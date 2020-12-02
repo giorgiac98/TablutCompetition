@@ -1,3 +1,4 @@
+from multiprocessing import Queue, Process, cpu_count
 import numpy as np
 
 import pytablut.config as cfg
@@ -119,8 +120,7 @@ class MCTS:
 
                 # U = self.c_puct * ((1 - epsilon) * edge.P + epsilon * nu[i]) * np.sqrt(N) / (1 + edge.N)
                 QU = edge.Q + U
-                lg.logger_mcts.info('ACTION: {}, QU: {}'.format(edge.action, QU))
-
+                # lg.logger_mcts.info('ACTION: {}, QU: {}'.format(edge.action, QU))
                 if QU > max_QU and edge not in path:
                     lg.logger_mcts.debug('UPDATING SIMULATION EDGE')
                     max_QU = QU
@@ -134,7 +134,7 @@ class MCTS:
 
     def expand_leaf(self, leaf: Node) -> bool:
         lg.logger_mcts.info('EXPANDING LEAF WITH ID {}'.format(leaf.id))
-        found_terminal = leaf.state.is_terminal
+        found_terminal = False
         for action in leaf.state.actions:
             next_state = leaf.state.transition_function(action)
             new_leaf = Node(next_state)
@@ -144,17 +144,43 @@ class MCTS:
                 found_terminal = True
         return found_terminal
 
-    def random_playout(self, leaf: Node, check_terminals):
+    def random_playout(self, leaf: Node, turn: int):
         lg.logger_mcts.info('PERFORMING RANDOM PLAYOUT')
+        processes = []
+        results = []
+        q = Queue()
         current_state = leaf.state
+        for i in range(cpu_count()):
+            p = Process(target=self.__parallel_playout, args=(current_state, turn, q))
+            processes.append(p)
+            p.start()
+        for _ in processes:
+            r = q.get()
+            results.append(r)
+        for p in processes:
+            p.join()
+
+        final_v = 0
+        n = 0
+        sum_len_paths = 0
+        for v, path in results:
+            sum_len_paths += len(path)
+            v *= max(1, cfg.MAX_MOVES - len(path))
+            final_v += v
+            n += np.abs(v)
+        return final_v, n, sum_len_paths/len(processes)
+
+    def __parallel_playout(self, current_state, turn, return_queue):
         path = []
+        v = 1
         while not current_state.is_terminal:
             # FIXME sometimes during random playout we have 0 actions and it crashes (low >= high)
-            if check_terminals:
+            if turn > 5:
                 next_states = ([current_state.transition_function(act) for act in current_state.actions])
                 any_terminal = np.argwhere([state.is_terminal for state in next_states])
                 if np.any(any_terminal):
                     act_idx = any_terminal[0, 0]
+                    v = any_terminal.shape[0]
                 else:
                     act_idx = np.random.randint(0, len(current_state.actions))
                 path.append(current_state.actions[act_idx])
@@ -165,14 +191,13 @@ class MCTS:
                 current_state = current_state.transition_function(current_state.actions[act_idx])
 
         if current_state.turn != self.player:
-            return 1, path
+            return_queue.put((v, path))
         else:
-            return -1, path
+            return_queue.put((-v, path))
 
-    def backpropagation(self, v, path: list):
+    def backpropagation(self, v, n, path: list):
         lg.logger_mcts.info('PERFORMING BACKPROPAGATION')
         direction = 1
-        n = np.abs(v)
         for edge in path:
             edge.N += n
             edge.W += v * direction

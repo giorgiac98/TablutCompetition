@@ -1,3 +1,4 @@
+import multiprocessing
 import pickle
 import time
 
@@ -7,13 +8,13 @@ import pytablut.config as cfg
 import pytablut.loggers as lg
 from pytablut.MCTS import MCTS, Node
 from pytablut.game import MAP
-# from neuralnet import ResidualNN
+# from pytablut.neuralnet import ResidualNN
 from pytablut.utils import Timeit
 
 
 class Player:
 
-    def __init__(self, color, name, nnet, timeout=cfg.TIMEOUT,
+    def __init__(self, color, name, nnet_ver=None, timeout=cfg.TIMEOUT,
                  turns_before_tau0=cfg.TURNS_BEFORE_TAU0, tau=cfg.TAU, tau_alpha=cfg.TAU_ALPHA,
                  simulations=cfg.MCTS_SIMULATIONS, c_puct=cfg.CPUCT, choice_strategy="max_child"):
         """
@@ -27,7 +28,12 @@ class Player:
         self.color: int = MAP[color]
         self.timeout: int = timeout
         self.mcts: MCTS = None
-        # self.brain: ResidualNN = nnet
+        if nnet_ver is not None:
+            self.brain = ResidualNN()
+            if nnet_ver > 0:
+                self.brain.load_model(nnet_ver)
+        else:
+            self.brain = None
         self.simulations: int = simulations
         self.choice_strategy = choice_strategy
         self.c_puct: int = c_puct
@@ -111,40 +117,50 @@ class Player:
             pvals = pi / np.sum(pi)  # normalization
             act_idx = np.argwhere(np.random.multinomial(1, pvals) == 1).reshape(-1)[0]
             action = self.mcts.root.edges[act_idx].action
+
+        for edge in self.mcts.root.edges:
+            lg.logger_player.info(f'ACTION: {edge.action}, N:{edge.N:0>6.0f}, W:{edge.W:0>5.0f}, Q:{edge.Q:0>2.2f}')
+
         lg.logger_player.info('COMPUTED ACTION: {}'.format(action))
         self.end_turn(self.mcts.root.edges[act_idx].out_node)
         return action
 
-    @Timeit(logger=lg.logger_player)
     def simulate(self) -> None:
         """
         Performs the monte carlo simulations, using the neural network to evaluate the leaves
         """
         self.__start_timer()
-        sim = 1
+        simulations = 0
+        segment = 6
+        K = 1
         while not self.__timeover():
-            if sim % 50 == 0:
-                lg.logger_player.info('{:3d} SIMULATIONS PERFORMED'.format(sim))
+            if simulations >= np.exp2(segment):
+                segment += 1
+                K = np.exp2(segment - 6)
             # selection
             leaf, path = self.mcts.select_leaf()
-            # v_brain = self.brain.predict(leaf.state)
-
             # expansion
-            found_terminal = self.mcts.expand_leaf(leaf)
-            if found_terminal:
+            n = 1
+            if leaf.state.is_terminal:
                 if leaf.state.turn == self.color:
-                    v = 1
-                else:
                     v = -1
+                else:
+                    v = 1
             else:
-                v, play_path = self.mcts.random_playout(leaf, self.turn > 5)
-                if self.turn > 1:
-                    v *= max(1, cfg.MAX_MOVES - len(play_path))
-            # alpha = self.turn / (self.turn + play_len)
-            # v = v_term + (alpha * v_brain + (1 - alpha) * v_play)
+                found_terminal = self.mcts.expand_leaf(leaf)
+                if found_terminal:
+                    if leaf.state.turn == self.color:
+                        v = 1
+                    else:
+                        v = -1
+                elif self.brain is not None:
+                    v = self.brain.predict(leaf.state)
+                else:
+                    v, n, _ = self.mcts.random_playout(leaf, self.turn)
             # backpropagation
-            self.mcts.backpropagation(v, path)
-            sim += 1
+            self.mcts.backpropagation(K * v, K * n, path)
+            simulations += multiprocessing.cpu_count()
+        lg.logger_player.info('{:3d} SIMULATIONS PERFORMED'.format(simulations))
 
     @Timeit(logger=lg.logger_player)
     def replay(self, memories) -> None:
@@ -192,7 +208,7 @@ class Player:
         :param node: node of the chosen action
         """
 
-        if self.turn == 1:
+        if self.turn == 1 and self.brain is None:
             self.save_history()
         self.turn += 1
         self.mcts.new_root(node)
