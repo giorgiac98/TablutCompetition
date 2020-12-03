@@ -4,7 +4,6 @@ import numpy as np
 import pytablut.config as cfg
 import pytablut.loggers as lg
 from pytablut.game import State
-from pytablut.utils import Timeit
 
 
 class Node:
@@ -107,26 +106,18 @@ class MCTS:
             simulation_edge = None
             lg.logger_mcts.debug('PLAYER TURN {}'.format(node.state.turn))
 
-            if node == self.root:
-                nu = np.random.dirichlet([cfg.ALPHA] * len(node.edges))
-            else:
-                nu = [0] * len(node.edges)
-
             for i, edge in enumerate(node.edges):
                 if edge.N == 0:
                     U = np.inf
                 else:
                     U = self.c_puct * np.sqrt(np.log(Np) / edge.N)
 
-                # U = self.c_puct * ((1 - epsilon) * edge.P + epsilon * nu[i]) * np.sqrt(N) / (1 + edge.N)
                 QU = edge.Q + U
-                # lg.logger_mcts.info('ACTION: {}, QU: {}'.format(edge.action, QU))
                 if QU > max_QU and edge not in path:
                     lg.logger_mcts.debug('UPDATING SIMULATION EDGE')
                     max_QU = QU
                     simulation_edge = edge
 
-            # next_state = node.state.transition_function(simulation_edge.action)
             node = simulation_edge.out_node
             path.append(simulation_edge)
 
@@ -165,7 +156,6 @@ class MCTS:
         sum_len_paths = 0
         for v, path in results:
             sum_len_paths += len(path)
-            v *= max(1, cfg.MAX_MOVES - len(path))
             final_v += v
             n += np.abs(v)
         return final_v, n, sum_len_paths/len(processes)
@@ -175,7 +165,7 @@ class MCTS:
         path = []
         v = 1
         while not current_state.is_terminal:
-            if turn > 5:
+            if turn > 2:
                 next_states = ([current_state.transition_function(act) for act in current_state.actions])
                 any_terminal = np.argwhere([state.is_terminal for state in next_states])
                 if np.any(any_terminal):

@@ -6,7 +6,7 @@ import numpy as np
 
 import pytablut.config as cfg
 import pytablut.loggers as lg
-from pytablut.MCTS import MCTS, Node
+from pytablut.MCTSVanilla import MCTS, Node
 from pytablut.game import MAP
 # from pytablut.neuralnet import ResidualNN
 from pytablut.utils import Timeit
@@ -16,7 +16,7 @@ class Player:
 
     def __init__(self, color, name, nnet_ver=None, timeout=cfg.TIMEOUT,
                  turns_before_tau0=cfg.TURNS_BEFORE_TAU0, tau=cfg.TAU, tau_alpha=cfg.TAU_ALPHA,
-                 simulations=cfg.MCTS_SIMULATIONS, c_puct=cfg.CPUCT, choice_strategy="max_child"):
+                 simulations=cfg.MCTS_SIMULATIONS, c_puct=cfg.CPUCT, choice_strategy="robust_child"):
         """
         Parameters:
         :param color: color of the player, either BLACK or WHITE
@@ -58,14 +58,14 @@ class Player:
     def build_mcts(self, state):
         """"""
         lg.logger_player.info("BUILDING MCTS")
-        if self.mcts is None:
+        """if self.mcts is None:
             if self.turn == 1:
                 self.mcts = self.load_history(state)
                 if self.color == -1:
                     self.mcts.new_root(Node(state))
-                    self.mcts.swap_values()
-            if self.mcts is None:  # may still be None if state does not exist in history
-                self.mcts = MCTS(self.color, Node(state), self.c_puct)
+                    self.mcts.swap_values()"""
+        if self.mcts is None:  # may still be None if state does not exist in history
+            self.mcts = MCTS(self.color, Node(state), self.c_puct)
             win_action = None
         else:
             win_action = self.mcts.new_root(Node(state))
@@ -75,7 +75,7 @@ class Player:
     def act(self, state):
         """
         computes best action based on given state
-        :return tuple (action, pi)
+        :return action
         """
         lg.logger_player.info("COMPUTING ACTION FOR STATE {}".format(state.id))
         # v = self.brain.predict(state)
@@ -92,12 +92,12 @@ class Player:
         """
         Chooses the best action from the current state,
         either deterministically or stochastically
-        :return: tuple (action, pi), pi are normalized probabilities
+        :return: action
         """
         if self.choice_strategy == "max_child":
             # select the action with the highest reward
             pi = np.array([edge.Q for edge in self.mcts.root.edges])
-            pi += np.abs(np.min(pi)) + 1e-5
+            # pi += np.abs(np.min(pi)) + 1e-5
         elif self.choice_strategy == "robust_child":
             # select the most visited action
             pi = np.array([edge.N for edge in self.mcts.root.edges])
@@ -105,9 +105,9 @@ class Player:
             # select the action with both the highest visit count and the highest reward;
             # if none exists, then continue searching until an acceptable visit count is achieved
             raise NotImplementedError(f'{self.choice_strategy} strategy not yet implemented')
-        elif self.choice_strategy == "secure child":
+        elif self.choice_strategy == "secure_child":
             # the action which maximizes the lower confidence bound (q + a/sqrt(n))
-            raise NotImplementedError(f'{self.choice_strategy} strategy not yet implemented')
+            pi = np.array([(edge.Q + 1/np.sqrt(edge.N)) for edge in self.mcts.root.edges])
         else:
             raise ValueError(f'wrong choice strategy: {self.choice_strategy}')
         if self.turn >= self.turns_before_tau0:
@@ -127,7 +127,7 @@ class Player:
 
     def simulate(self) -> None:
         """
-        Performs the monte carlo simulations, using the neural network to evaluate the leaves
+        Performs the monte carlo simulations
         """
         self.__start_timer()
         simulations = 0
@@ -158,8 +158,11 @@ class Player:
                 else:
                     v, n, _ = self.mcts.random_playout(leaf, self.turn)
             # backpropagation
-            self.mcts.backpropagation(K * v, K * n, path)
-            simulations += multiprocessing.cpu_count()
+            self.mcts.backpropagation(v, n, path)
+            if n > 1:
+                simulations += multiprocessing.cpu_count()
+            else:
+                simulations += n
         lg.logger_player.info('{:3d} SIMULATIONS PERFORMED'.format(simulations))
 
     @Timeit(logger=lg.logger_player)
