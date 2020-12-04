@@ -1,6 +1,7 @@
 # How to run ISerenissimi.py
 The player and all the related files can be found in the pytablut folder.
 In order to run a player that communicates with the Java server, run these commands from the console:
+
 Black:
 ```
 python3 ISerenissimi.py black 60 localhost
