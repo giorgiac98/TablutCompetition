@@ -10,7 +10,7 @@ White:
 ```
 python3 ISerenissimi.py white 60 localhost
 ```
-First parameter is the color of the player, second parameter the time given in order to choose the move (the server timeout), third parameter the ip address of the server
+First parameter is the color of the player, second parameter the time given in order to choose the move (the server timeout), third parameter the ip address of the server.
 
 # TablutCompetition
 Software for the Tablut Students Competition
