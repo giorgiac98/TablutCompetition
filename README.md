@@ -1,3 +1,16 @@
+# How to run ISerenissimi.py
+The player and all the related files can be found in the pytablut folder.
+In order to run a player that communicates with the Java server, run these commands from the console:
+Black:
+```
+python3 ISerenissimi.py black 60 localhost
+```
+White:
+```
+python3 ISerenissimi.py white 60 localhost
+```
+First parameter is the color of the player, second parameter the time given in order to choose the move (the server timeout), third parameter the ip address of the server
+
 # TablutCompetition
 Software for the Tablut Students Competition
 
